@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GameTopUp — Exx (Fixed Single File)</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+    :root{ --neon1:#00ffff; --neon2:#1f51ff; --bg:#050508; --glass: rgba(18,18,28,0.85); }
+    *{box-sizing:border-box}
+    body{margin:0;padding:0;font-family:'Orbitron',sans-serif;background:radial-gradient(circle at top,#07070b,#000);color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;}
+    .app-container{width:100%;max-width:980px;padding:18px;}
+    /* overlays */
+    .overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg, rgba(0,0,0,0.75), rgba(0,0,0,0.85));z-index:9999;backdrop-filter: blur(4px);flex-direction:column;gap:14px}
+    .hide{display:none!important}
+    .loader-box{padding:18px 28px;border-radius:14px;background:linear-gradient(180deg, rgba(20,20,30,0.9), rgba(10,10,18,0.9));border:1px solid var(--neon2);box-shadow:0 0 30px var(--neon2)33, 0 0 12px var(--neon1)22;text-align:center}
+    .loader-title{color:var(--neon1);font-size:1.2rem;margin-bottom:6px;text-shadow:0 0 12px var(--neon1)}
+    .loader-sub{color:#bfeef0;font-size:0.85rem;opacity:0.95}
+    /* layout & cards */
+    .layout{display:grid;grid-template-columns:320px 1fr;gap:18px}
+    .card{background:var(--glass);border-radius:14px;padding:16px;border:1px solid var(--neon2);box-shadow:0 0 30px #07102a55,0 0 14px var(--neon2)22}
+    .left{display:flex;flex-direction:column;gap:12px}
+    .title{font-size:1.2rem;color:var(--neon1);margin:0 0 6px 0;text-shadow:0 0 8px var(--neon1)}
+    .muted{font-size:0.85rem;color:#9de7ea}
+    .balance{font-size:1.4rem;color:var(--neon1);font-weight:700}
+    .small-btn{padding:8px 10px;border-radius:8px;border:none;background:linear-gradient(90deg,var(--neon1),var(--neon2));color:#000;cursor:pointer;margin-top:8px}
+    .nav{display:flex;gap:8px;margin-top:6px}
+    .nav button{flex:1;padding:8px;border-radius:8px;border:1px solid #123;background:transparent;color:var(--neon1);cursor:pointer}
+    .nav button.active{background:linear-gradient(90deg,var(--neon1),var(--neon2));color:#000}
+    .services-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px}
+    .service-card{background:linear-gradient(180deg, rgba(10,10,16,0.85), rgba(15,15,22,0.85));border-radius:12px;padding:14px;border:1px solid var(--neon2);text-align:center;cursor:pointer;transition:transform .25s, box-shadow .25s}
+    .service-card:hover{transform:translateY(-8px);box-shadow:0 0 30px var(--neon1)88}
+    .exx-icon{width:64px;height:64px;border-radius:12px;margin:0 auto 8px auto;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px;background:linear-gradient(180deg, rgba(0,0,0,0.15), rgba(10,10,14,0.35));border:1px solid rgba(255,255,255,0.04);text-shadow: 0 0 10px rgba(0,255,255,0.15);color:var(--neon1);box-shadow:0 0 14px #00ffff33, inset 0 -6px 40px #00000066;transition: transform .35s, box-shadow .35s;}
+    .exx-icon.spin{animation:spin 1s linear infinite}
+    @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+    .tx-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+    .tx-item{background:rgba(10,10,16,0.8);padding:10px;border-radius:8px;border:1px solid #111;display:flex;justify-content:space-between;align-items:center}
+    .tx-item .left{display:flex;flex-direction:column}
+    .tx-item .amount{font-weight:700;color:var(--neon1)}
+    .modal{position:fixed;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);z-index:999}
+    .modal-box{width:460px;background:linear-gradient(180deg, rgba(18,18,28,0.95), rgba(8,8,14,0.95));border-radius:12px;padding:16px;border:1px solid var(--neon2)}
+    .form-row{margin:8px 0}
+    input,select{width:100%;padding:10px;border-radius:8px;border:none;background:#07070a;color:var(--neon1)}
+    .row{display:flex;gap:8px}
+    .row .col{flex:1}
+    .auth-wrap{display:flex;gap:12px}
+    .auth-card{flex:1;padding:12px}
+    .auth-card input{width:100%;padding:10px;border-radius:8px;border:none;background:#07070a;color:var(--neon1);margin:8px 0;text-align:center}
+    @media(max-width:980px){ .layout{grid-template-columns:1fr; } .services-grid{grid-template-columns:repeat(2,1fr); } .modal-box{width:92%} }
+
+    /* small helper to hide main content before login */
+    .locked { opacity: 0.15; pointer-events: none; filter: blur(0.4px); }
+  </style>
+</head>
+<body>
+  <!-- overlays -->
+  <div id="overlayInitial" class="overlay">
+    <div class="loader-box">
+      <div class="loader-title">⚡ Memuat GameTopUp...</div>
+      <div class="loader-sub">Mempersiapkan portal Exx...</div>
+    </div>
+  </div>
+
+  <div id="overlayLogin" class="overlay hide">
+    <div class="loader-box">
+      <div class="loader-title">🎮 Menghubungkan ke server Exx...</div>
+      <div class="loader-sub">Harap tunggu</div>
+    </div>
+  </div>
+
+  <div class="app-container">
+    <div class="layout">
+      <div class="left">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div class="title">Akun</div>
+              <div class="muted">Masuk / Daftar</div>
+            </div>
+            <div><button id="btn-show-auth" class="small-btn" style="padding:6px 10px">Login/Reg</button></div>
+          </div>
+
+          <div id="authArea" style="margin-top:10px">
+            <div class="auth-wrap">
+              <div class="auth-card card" style="padding:12px">
+                <div style="font-weight:700;color:var(--neon1)">Login</div>
+                <input id="login-email" placeholder="Email (atau gunakan demo)"/>
+                <input id="login-password" type="password" placeholder="Password"/>
+                <button id="btn-login" class="small-btn">Masuk</button>
+                <div class="muted" style="margin-top:6px">Demo: p@gmail.com / 2211</div>
+              </div>
+              <div class="auth-card card" style="padding:12px">
+                <div style="font-weight:700;color:var(--neon1)">Registrasi</div>
+                <input id="reg-email" placeholder="Email baru"/>
+                <input id="reg-password" type="password" placeholder="Password (min 4)"/>
+                <input id="reg-username" placeholder="Username"/>
+                <button id="btn-register" class="small-btn">Daftar</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px"><button id="btn-topup-saldo" class="small-btn">Top Up Saldo</button></div>
+          <div style="margin-top:12px" class="nav">
+            <button id="tab-home" class="active">Beranda</button>
+            <button id="tab-history">Riwayat</button>
+            <button id="tab-account">Akun</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="title">Info Akun</div>
+          <div class="muted">Email</div>
+          <div id="user-email" class="muted" style="color:var(--neon1)">-</div>
+          <div style="margin-top:8px" class="muted">Saldo</div>
+          <div id="user-balance" class="balance">Rp 0</div>
+        </div>
+      </div>
+
+      <div id="mainArea">
+        <div id="main-home" class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div class="title">Layanan Exx</div>
+              <div class="muted">Pilih layanan untuk top-up</div>
+            </div>
+            <div class="muted">Pengguna: <span id="label-user">-</span></div>
+          </div>
+
+          <div class="services-grid" style="margin-top:14px">
+            <div class="service-card" data-category="game">
+              <div class="exx-icon" id="icon-game">Exx</div>
+              <p>Top Up Game</p>
+            </div>
+            <div class="service-card" data-category="money">
+              <div class="exx-icon" id="icon-money">Exx</div>
+              <p>ExxMoney</p>
+            </div>
+            <div class="service-card" data-category="bank">
+              <div class="exx-icon" id="icon-bank">Exx</div>
+              <p>ExxBank</p>
+            </div>
+            <div class="service-card" data-category="pulsa">
+              <div class="exx-icon" id="icon-data">Exx</div>
+              <p>Pulsa & Paket Data</p>
+            </div>
+          </div>
+
+          <div style="margin-top:14px">
+            <div class="title" style="font-size:1rem">Riwayat Terakhir</div>
+            <div id="recent-list" class="tx-list"></div>
+          </div>
+        </div>
+
+        <div id="main-history" class="card hide">
+          <div class="title">Riwayat Transaksi</div>
+          <div id="history-all" class="tx-list" style="margin-top:12px"></div>
+        </div>
+
+        <div id="main-account" class="card hide">
+          <div class="title">Pengaturan Akun</div>
+          <div style="margin-top:8px">
+            <div class="muted">Email saat ini</div>
+            <div id="acc-email" style="margin:6px 0;color:var(--neon1)"></div>
+            <div class="muted">Username</div>
+            <div id="acc-username" style="margin:6px 0;color:var(--neon1)"></div>
+            <button id="btn-logout" class="small-btn">Keluar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- modal topup -->
+  <div id="modalTopup" class="modal hide">
+    <div class="modal-box card">
+      <div class="title" id="modal-title">Top Up</div>
+      <div class="muted" id="modal-sub">Isi detail</div>
+
+      <div class="form-row">
+        <label class="muted">Layanan</label>
+        <input id="inp-service" readonly>
+      </div>
+
+      <div class="form-row" id="row-target">
+        <label class="muted" id="label-target">Target</label>
+        <input id="inp-target" placeholder="Masukkan ID / Nomor / Rekening">
+      </div>
+
+      <div class="form-row">
+        <label class="muted">Nominal (Rp)</label>
+        <select id="sel-nominal">
+          <option value="10000">10.000</option>
+          <option value="25000" selected>25.000</option>
+          <option value="50000">50.000</option>
+          <option value="100000">100.000</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label class="muted">Metode Pembayaran</label>
+        <select id="sel-method">
+          <option value="saldo">Saldo</option>
+          <option value="ewallet">E-Wallet</option>
+          <option value="bank">Bank Transfer</option>
+        </select>
+      </div>
+
+      <div class="form-row row">
+        <div class="col"><button id="btn-confirm-topup" class="small-btn">Konfirmasi Top Up</button></div>
+        <div class="col"><button id="btn-cancel-topup" style="background:#222;color:var(--neon1);border:1px solid #111">Batal</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- modal tx detail -->
+  <div id="modalTx" class="modal hide">
+    <div class="modal-box card">
+      <div class="title">Detail Transaksi</div>
+      <div id="tx-detail" style="margin-top:8px"></div>
+      <div style="margin-top:12px" class="row">
+        <div class="col"><button id="btn-mark-paid" class="small-btn">Tandai Lunas</button></div>
+        <div class="col"><button id="btn-close-tx" style="background:#222;color:var(--neon1);border:1px solid #111">Tutup</button></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  /* AUDIO ENGINE */
+  const AudioEngine = (function(){
+    const ctx = (window.AudioContext || window.webkitAudioContext) ? new (window.AudioContext || window.webkitAudioContext)() : null;
+    function click(){ if(!ctx) return; const o=ctx.createOscillator(), g=ctx.createGain(); o.type='sine'; o.frequency.value=900; g.gain.value=0.0001; o.connect(g); g.connect(ctx.destination); const now=ctx.currentTime; g.gain.exponentialRampToValueAtTime(0.06, now+0.01); o.frequency.linearRampToValueAtTime(700, now+0.12); g.gain.exponentialRampToValueAtTime(0.0001, now+0.25); o.start(now); o.stop(now+0.26); }
+    function loading(d=900){ if(!ctx) return; const o=ctx.createOscillator(), g=ctx.createGain(), f=ctx.createBiquadFilter(); o.type='sawtooth'; o.frequency.value=110; f.type='highpass'; f.frequency.value=200; o.connect(f); f.connect(g); g.connect(ctx.destination); const now=ctx.currentTime; g.gain.linearRampToValueAtTime(0.07, now+0.06); o.frequency.exponentialRampToValueAtTime(700, now+(d/1000)); o.start(now); o.stop(now+(d/1000)+0.02); }
+    return { click, loading };
+  })();
+
+  /* DOM caches */
+  const overlayInitial = document.getElementById('overlayInitial');
+  const overlayLogin = document.getElementById('overlayLogin');
+  const userEmailLabel = document.getElementById('user-email');
+  const userBalance = document.getElementById('user-balance');
+  const labelUser = document.getElementById('label-user');
+  const accEmail = document.getElementById('acc-email');
+  const accUsername = document.getElementById('acc-username');
+  const tabHome = document.getElementById('tab-home');
+  const tabHistory = document.getElementById('tab-history');
+  const tabAccount = document.getElementById('tab-account');
+  const mainHome = document.getElementById('main-home');
+  const mainHistory = document.getElementById('main-history');
+  const mainAccount = document.getElementById('main-account');
+  const recentList = document.getElementById('recent-list');
+  const historyAll = document.getElementById('history-all');
+  const loginEmail = document.getElementById('login-email');
+  const loginPassword = document.getElementById('login-password');
+  const regEmail = document.getElementById('reg-email');
+  const regPassword = document.getElementById('reg-password');
+  const regUsername = document.getElementById('reg-username');
+  const btnLogin = document.getElementById('btn-login');
+  const btnRegister = document.getElementById('btn-register');
+  const btnTopupSaldo = document.getElementById('btn-topup-saldo');
+  const btnShowAuth = document.getElementById('btn-show-auth');
+  const modalTopup = document.getElementById('modalTopup');
+  const inpService = document.getElementById('inp-service');
+  const labelTarget = document.getElementById('label-target');
+  const inpTarget = document.getElementById('inp-target');
+  const selNominal = document.getElementById('sel-nominal');
+  const selMethod = document.getElementById('sel-method');
+  const modalTitle = document.getElementById('modal-title');
+  const btnConfirmTopup = document.getElementById('btn-confirm-topup');
+  const btnCancelTopup = document.getElementById('btn-cancel-topup');
+  const modalTx = document.getElementById('modalTx');
+  const txDetail = document.getElementById('tx-detail');
+  const btnMarkPaid = document.getElementById('btn-mark-paid');
+  const btnCloseTx = document.getElementById('btn-close-tx');
+  const btnLogout = document.getElementById('btn-logout');
+
+  /* storage helpers */
+  function loadUsers(){ return JSON.parse(localStorage.getItem('users') || '[]'); }
+  function saveUsers(list){ localStorage.setItem('users', JSON.stringify(list)); }
+  function loadTx(){ return JSON.parse(localStorage.getItem('txs') || '[]'); }
+  function saveTx(list){ localStorage.setItem('txs', JSON.stringify(list)); }
+  function getCurrentUser(){ return JSON.parse(localStorage.getItem('currentUser') || 'null'); }
+  function setCurrentUser(u){ localStorage.setItem('currentUser', JSON.stringify(u)); }
+
+  /* ensure default user (as requested) */
+  (function ensureDefaultUser(){
+    let users = loadUsers();
+    const defEmail = 'p@gmail.com';
+    const exists = users.find(u => u.email === defEmail);
+    if(!exists){
+      users.push({ email: defEmail, password: '2211', username: 'udinAjaa', balance: 50000 });
+    } else {
+      users = users.map(u => u.email === defEmail ? Object.assign({}, u, { password: '2211', username: 'udinAjaa', balance: u.balance || 50000 }) : u);
+    }
+    saveUsers(users);
+  })();
+
+  /* UI control helpers so main area is locked when not logged in */
+  function lockMainArea(lock){
+    const main = document.getElementById('mainArea');
+    if(!main) return;
+    if(lock){
+      main.classList.add('locked');
+    } else {
+      main.classList.remove('locked');
+    }
+  }
+
+  /* initial loading: show overlay then focus auth area */
+  function startInitial(){
+    overlayInitial.classList.remove('hide');
+    AudioEngine.loading(1100);
+    setTimeout(()=> {
+      overlayInitial.classList.add('hide');
+      // after initial loading, check if currentUser exists
+      const cu = getCurrentUser();
+      refreshUI();
+      if(!cu){
+        // not logged -> lock main area and focus auth
+        lockMainArea(true);
+        document.getElementById('authArea').scrollIntoView({behavior:'smooth'});
+        setTimeout(()=>{ if(loginEmail) loginEmail.focus(); }, 200);
+      } else {
+        // logged -> unlock main area and show home tab
+        lockMainArea(false);
+        setActiveTab('home');
+      }
+    }, 1200);
+  }
+  startInitial();
+
+  /* refresh UI */
+  function formatRp(n){ return 'Rp ' + Number(n).toLocaleString('id-ID'); }
+  function refreshUI(){
+    const u = getCurrentUser();
+    if(u){
+      userEmailLabel.textContent = u.email;
+      labelUser.textContent = u.username || u.email;
+      if(accEmail) accEmail.textContent = u.email;
+      if(accUsername) accUsername.textContent = u.username || '-';
+      userBalance.textContent = formatRp(Number(u.balance || 0));
+      const txs = loadTx().filter(t => t.uid === u.email).sort((a,b)=>b.createdAt-a.createdAt);
+      recentList.innerHTML = '';
+      if(txs.length===0) recentList.innerHTML = '<div class="muted">Belum ada transaksi</div>';
+      else txs.slice(0,4).forEach(t => {
+        const el = document.createElement('div'); el.className='tx-item';
+        el.innerHTML = `<div><div style="font-weight:700">${t.service} — ${t.target}</div><div class="muted">${new Date(t.createdAt).toLocaleString()}</div></div><div style="text-align:right"><div class="amount">${formatRp(t.nominal)}</div><div class="muted">${t.status}</div></div>`;
+        recentList.appendChild(el);
+      });
+      historyAll.innerHTML = '';
+      txs.forEach(t=> {
+        const el = document.createElement('div'); el.className='tx-item';
+        el.innerHTML = `<div><div style="font-weight:700">${t.service}</div><div class="muted">${t.target} — ${new Date(t.createdAt).toLocaleString()}</div></div><div style="text-align:right"><div class="amount">${formatRp(t.nominal)}</div><div style="margin-top:6px"><button data-id="${t.id}" class="small-btn" style="padding:6px 8px;background:${t.status==='success'?'#2ecc71':'#ffcc00'}">${t.status}</button></div></div>`;
+        const btn = el.querySelector('button');
+        if(btn) btn.addEventListener('click', ()=> openTxDetail(t.id));
+        historyAll.appendChild(el);
+      });
+    } else {
+      userEmailLabel.textContent = '-';
+      labelUser.textContent = '-';
+      if(accEmail) accEmail.textContent = '-';
+      if(accUsername) accUsername.textContent = '-';
+      userBalance.textContent = formatRp(0);
+      recentList.innerHTML = '<div class="muted">Tidak ada riwayat — silakan login</div>';
+      historyAll.innerHTML = '<div class="muted">Belum ada riwayat</div>';
+    }
+  }
+
+  /* AUTH: register & login */
+  btnRegister.addEventListener('click', ()=>{
+    AudioEngine.click();
+    regEmail.classList.remove('error'); regPassword.classList.remove('error');
+    const email = (regEmail.value || '').trim(), password = (regPassword.value || '').trim(), username = (regUsername.value || '').trim() || 'Gamer';
+    if(!email || !password){ if(!email) regEmail.classList.add('error'); if(!password) regPassword.classList.add('error'); alert('⚠️ Lengkapi semua data!'); return; }
+    if(password.length < 4){ regPassword.classList.add('error'); alert('⚠️ Password minimal 4 karakter'); return; }
+    let users = loadUsers();
+    if(users.find(u=>u.email.toLowerCase() === email.toLowerCase())){ regEmail.classList.add('error'); alert('❌ Email sudah terdaftar!'); return; }
+    users.push({ email, password, username, balance:0 });
+    saveUsers(users);
+    alert('✅ Registrasi berhasil. Silakan login.');
+    regEmail.value=''; regPassword.value=''; regUsername.value='';
+    if(loginEmail) loginEmail.focus();
+    refreshUI();
+  });
+
+  btnLogin.addEventListener('click', ()=>{
+    AudioEngine.click();
+    loginEmail.classList.remove('error'); loginPassword.classList.remove('error');
+    const email = (loginEmail.value || '').trim(), password = (loginPassword.value || '').trim();
+    if(!email || !password){ if(!email) loginEmail.classList.add('error'); if(!password) loginPassword.classList.add('error'); alert('⚠️ Isi email & password!'); return; }
+    const users = loadUsers();
+    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
+    if(!user){ loginEmail.classList.add('error'); loginPassword.classList.add('error'); alert('❌ Email atau password salah!'); return; }
+    // show login overlay + sound, then set currentUser and go to beranda
+    overlayLogin.classList.remove('hide');
+    AudioEngine.loading(900);
+    setTimeout(()=>{
+      overlayLogin.classList.add('hide');
+      setCurrentUser(user);
+      loginEmail.value=''; loginPassword.value='';
+      refreshUI();
+      lockMainArea(false);
+      setActiveTab('home');
+      // small icon spin
+      document.querySelectorAll('.exx-icon').forEach(ic=>{ ic.classList.add('spin'); setTimeout(()=>ic.classList.remove('spin'), 800); });
+      alert('✅ Login berhasil! Selamat datang, ' + (user.username || user.email));
+    }, 900);
+  });
+
+  btnShowAuth.addEventListener('click', ()=>{ AudioEngine.click(); document.getElementById('authArea').scrollIntoView({behavior:'smooth'}); });
+
+  /* tabs */
+  function setActiveTab(tab){
+    tabHome.classList.remove('active'); tabHistory.classList.remove('active'); tabAccount.classList.remove('active');
+    mainHome.classList.add('hide'); mainHistory.classList.add('hide'); mainAccount.classList.add('hide');
+    if(tab==='home'){ tabHome.classList.add('active'); mainHome.classList.remove('hide'); }
+    if(tab==='history'){ tabHistory.classList.add('active'); mainHistory.classList.remove('hide'); }
+    if(tab==='account'){ tabAccount.classList.add('active'); mainAccount.classList.remove('hide'); }
+  }
+  tabHome.addEventListener('click', ()=>{ AudioEngine.click(); setActiveTab('home'); });
+  tabHistory.addEventListener('click', ()=>{ AudioEngine.click(); setActiveTab('history'); refreshUI(); });
+  tabAccount.addEventListener('click', ()=>{ AudioEngine.click(); setActiveTab('account'); refreshUI(); });
+
+  /* services -> open topup */
+  document.querySelectorAll('.service-card').forEach(card=>{
+    card.addEventListener('click', ()=>{
+      AudioEngine.click();
+      openTopup(card.dataset.category);
+    });
+  });
+
+  function requireAuth(){ const u = getCurrentUser(); if(!u){ alert('Silakan login terlebih dahulu. (Gunakan demo: p@gmail.com / 2211)'); return null; } return u; }
+
+  function openTopup(category){
+    const u = requireAuth(); if(!u) return;
+    modalTopup.classList.remove('hide');
+    if(category==='game'){ modalTitle.textContent='Top Up Game'; inpService.value='Top Up Game'; labelTarget.textContent='Player ID / UID'; inpTarget.placeholder='Masukkan Player ID'; selMethod.value='ewallet'; selNominal.value='25000'; }
+    if(category==='money'){ modalTitle.textContent='Top Up E-Money'; inpService.value='Top Up Uang'; labelTarget.textContent='Nomor HP / Akun'; inpTarget.placeholder='Masukkan nomor e-wallet'; selMethod.value='ewallet'; selNominal.value='50000'; }
+    if(category==='bank'){ modalTitle.textContent='Transfer Bank'; inpService.value='Transfer Bank'; labelTarget.textContent='No. Rekening'; inpTarget.placeholder='Masukkan nomor rekening'; selMethod.value='bank'; selNominal.value='100000'; }
+    if(category==='pulsa'){ modalTitle.textContent='Pulsa & Paket Data'; inpService.value='Pulsa & Data'; labelTarget.textContent='Nomor HP'; inpTarget.placeholder='Masukkan nomor HP'; selMethod.value='ewallet'; selNominal.value='10000'; }
+    inpTarget.value='';
+  }
+
+  btnCancelTopup.addEventListener('click', ()=>{ AudioEngine.click(); modalTopup.classList.add('hide'); });
+
+  btnTopupSaldo.addEventListener('click', ()=>{
+    const u = requireAuth(); if(!u) return;
+    AudioEngine.click();
+    modalTopup.classList.remove('hide');
+    modalTitle.textContent='Top Up Saldo'; inpService.value='Top Up Saldo'; labelTarget.textContent='Metode'; inpTarget.value='TopUpSaldo'; selMethod.value='ewallet'; selNominal.value='50000';
+  });
+
+  /* confirm topup */
+  btnConfirmTopup.addEventListener('click', ()=>{
+    AudioEngine.click();
+    const u = getCurrentUser(); if(!u){ alert('Silakan login'); modalTopup.classList.add('hide'); return; }
+    const service = inpService.value || 'Top Up';
+    const target = inpTarget.value.trim() || '-';
+    const nominal = Number(selNominal.value || 0);
+    const method = selMethod.value;
+    if(nominal <= 0){ alert('Pilih nominal valid'); return; }
+    if(method === 'saldo' && Number(u.balance || 0) < nominal){ alert('Saldo tidak cukup. Top up saldo terlebih dahulu.'); return; }
+
+    const txs = loadTx();
+    const tx = { id: 'tx_' + Date.now(), uid: u.email, service, target, nominal, method, status: 'pending', createdAt: Date.now() };
+    txs.push(tx); saveTx(txs);
+
+    if(method === 'saldo'){
+      let users = loadUsers();
+      const idx = users.findIndex(x=>x.email===u.email);
+      if(idx>=0){
+        users[idx].balance = Number(users[idx].balance || 0) - nominal;
+        saveUsers(users);
+        setCurrentUser(users[idx]);
+        const all = loadTx(); const tidx = all.findIndex(t=>t.id===tx.id); if(tidx>=0){ all[tidx].status='success'; saveTx(all); }
+        alert('Top-up berhasil via Saldo. Transaksi selesai.');
+        modalTopup.classList.add('hide'); refreshUI(); return;
+      }
+    }
+
+    modalTopup.classList.add('hide');
+    alert('Permintaan top-up dibuat. Silakan lakukan pembayaran (simulasi). Tandai Lunas di Riwayat setelah bayar.');
+    setActiveTab('history'); refreshUI();
+  });
+
+  /* open tx detail */
+  function openTxDetail(txId){
+    AudioEngine.click();
+    const txs = loadTx();
+    const tx = txs.find(t=>t.id===txId);
+    if(!tx) { alert('Transaksi tidak ditemukan'); return; }
+    modalTx.classList.remove('hide');
+    txDetail.innerHTML = `
+      <div><strong>ID:</strong> ${tx.id}</div>
+      <div><strong>Layanan:</strong> ${tx.service}</div>
+      <div><strong>Target:</strong> ${tx.target}</div>
+      <div><strong>Nominal:</strong> ${formatRp(tx.nominal)}</div>
+      <div><strong>Metode:</strong> ${tx.method}</div>
+      <div><strong>Status:</strong> ${tx.status}</div>
+      <div class="muted" style="margin-top:8px">Dibuat: ${new Date(tx.createdAt).toLocaleString()}</div>
+    `;
+    btnMarkPaid.onclick = ()=>{
+      AudioEngine.click();
+      const all = loadTx();
+      const idx = all.findIndex(t=>t.id===tx.id); if(idx<0) return;
+      all[idx].status = 'success'; saveTx(all);
+      if(tx.service === 'Top Up Saldo' || tx.target === 'TopUpSaldo'){
+        let users = loadUsers();
+        const uidx = users.findIndex(x=>x.email===tx.uid);
+        if(uidx>=0){ users[uidx].balance = Number(users[uidx].balance || 0) + Number(tx.nominal); saveUsers(users); setCurrentUser(users[uidx]); }
+      }
+      alert('Transaksi ditandai LUNAS');
+      modalTx.classList.add('hide'); refreshUI();
+    };
+  }
+
+  btnCloseTx.addEventListener('click', ()=>{ AudioEngine.click(); modalTx.classList.add('hide'); });
+
+  /* logout */
+  btnLogout.addEventListener('click', ()=>{
+    AudioEngine.click();
+    localStorage.removeItem('currentUser');
+    alert('Anda telah logout (demo).');
+    refreshUI();
+    lockMainArea(true);
+    setActiveTab('home');
+    document.getElementById('authArea').scrollIntoView({behavior:'smooth'});
+  });
+
+  /* ensure demo users if none */
+  (function ensureDemoUsers(){
+    let users = loadUsers();
+    if(users.length === 0){
+      users = [
+        { email:'p@gmail.com', password:'2211', username:'udinAjaa', balance:50000 },
+        { email:'demo@user.com', password:'1234', username:'DemoGamer', balance:30000 }
+      ];
+      saveUsers(users);
+    }
+    refreshUI();
+  })();
+
+  /* auto view: always show auth first unless user logs in */
+  (function tryAutoView(){
+    const cu = getCurrentUser();
+    // always show auth area first
+    setTimeout(()=>{ refreshUI(); lockMainArea(!cu); document.getElementById('authArea').scrollIntoView({behavior:'smooth'}); }, 900);
+  })();
+
+  /* helpers & events */
+  function formatRp(n){ return 'Rp ' + Number(n).toLocaleString('id-ID'); }
+  [loginEmail, loginPassword].forEach(inp => { if(inp) inp.addEventListener('keydown', e=>{ if(e.key === 'Enter') btnLogin.click(); }); });
+  [regEmail, regPassword, regUsername].forEach(inp => { if(inp) inp.addEventListener('keydown', e=>{ if(e.key === 'Enter') btnRegister.click(); }); });
+  historyAll.addEventListener('click', (e)=>{
+    const btn = e.target.closest('button[data-id]');
+    if(!btn) return;
+    const id = btn.getAttribute('data-id');
+    openTxDetail(id);
+  });
+  modalTopup.addEventListener('click', (e)=>{ if(e.target === modalTopup) modalTopup.classList.add('hide'); });
+  modalTx.addEventListener('click', (e)=>{ if(e.target === modalTx) modalTx.classList.add('hide'); });
+
+  </script>
+</body>
+</html>
